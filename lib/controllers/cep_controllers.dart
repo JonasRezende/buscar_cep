@@ -1,8 +1,7 @@
-import 'dart:convert';
-
+import 'package:buscar_cep/core/utils/helpers.dart';
 import 'package:buscar_cep/models/adress.dart';
+import 'package:buscar_cep/services/cep_service.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 class CepState {
   final bool isLoading;
@@ -29,17 +28,18 @@ class CepState {
 }
 
 class CepController {
+  final CepService service = CepService();
   final ValueNotifier<CepState> stateNotifier =
       ValueNotifier(CepState(isLoading: false));
 
   CepState get state => stateNotifier.value;
 
   Future<void> searchCep(String cep) async {
-    if (!_validateCep(cep)) {
+    // Verifica se o CEP é válido usando o método estático Helpers.isValidCep
+    if (!Helpers.isValidCep(cep)) {
       stateNotifier.value = state.copyWith(
         isLoading: false,
-        error: 'CEP inválido. Por favor, insira um CEP com 8 dígitos.',
-        address: null,
+        error: 'CEP inválido. Deve conter 8 dígitos.',
       );
       return;
     }
@@ -47,43 +47,24 @@ class CepController {
     stateNotifier.value = state.copyWith(isLoading: true, error: null);
 
     try {
-      final url = Uri.parse('https://viacep.com.br/ws/$cep/json/');
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data != null &&
-            data is Map<String, dynamic> &&
-            !data.containsKey('erro')) {
-          final address = Address.fromJson(data);
-          stateNotifier.value = state.copyWith(
-            isLoading: false,
-            address: address,
-            error: null,
-          );
-        } else {
-          stateNotifier.value = state.copyWith(
-            isLoading: false,
-            error: 'CEP não encontrado.',
-            address: null,
-          );
-        }
+      final address = await service.fetchAddress(cep);
+      if (address != null) {
+        stateNotifier.value = state.copyWith(
+          isLoading: false,
+          address: address,
+          error: null,
+        );
       } else {
         stateNotifier.value = state.copyWith(
           isLoading: false,
-          error: 'Erro ao buscar o CEP.',
+          error: 'CEP não encontrado.',
         );
       }
     } catch (e) {
       stateNotifier.value = state.copyWith(
         isLoading: false,
-        error: 'Erro ao buscar o CEP. Tente novamente.',
+        error: 'Erro ao buscar o CEP.',
       );
     }
-  }
-
-  bool _validateCep(String cep) {
-    final regex = RegExp(r'^\d{8}$');
-    return regex.hasMatch(cep);
   }
 }
