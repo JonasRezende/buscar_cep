@@ -1,7 +1,7 @@
 import 'package:buscar_cep/controllers/cep_controllers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_multi_formatter/flutter_multi_formatter.dart'; // Biblioteca para máscaras
 
 // Widget customizado para AppBar reduzida
 class ReducedAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -21,14 +21,7 @@ class ReducedAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: const Color(0xFFFBBA2B),
       elevation: 0,
       toolbarHeight: height, // Define a altura reduzida
-      title: const Text(
-        "Buscar CEP",
-        style: TextStyle(
-          fontSize: 16, // Ajusta o tamanho do texto
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      centerTitle: true, // Centraliza o título
+      // Centraliza o título
     );
   }
 }
@@ -47,6 +40,35 @@ class _CepPageState extends State<CepPage> {
 
   bool showResults = false;
   bool showError = false;
+  bool isLoading = false; // Controla o estado de carregamento
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Adiciona um listener ao campo CEP para limpar os resultados ao editar
+    cepController.addListener(() {
+      if (!isLoading && cepController.text.length < 9) {
+        setState(() {
+          showResults = false;
+          ruaController.clear();
+          bairroController.clear();
+          cidadeController.clear();
+          ufController.clear();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    cepController.dispose();
+    ruaController.dispose();
+    bairroController.dispose();
+    cidadeController.dispose();
+    ufController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,8 +147,11 @@ class _CepPageState extends State<CepPage> {
                         controller: cepController,
                         decoration: InputDecoration(
                           hintText: "Digite o CEP",
+                          filled: true, // Habilita o fundo
+                          fillColor: Colors.grey.shade200, // Cor do fundo
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none, // Remove a borda
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             vertical: 12,
@@ -135,8 +160,7 @@ class _CepPageState extends State<CepPage> {
                         ),
                         keyboardType: TextInputType.number,
                         inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(8),
+                          MaskedInputFormatter('00000-000'), // Máscara do CEP
                         ],
                         onChanged: (value) {
                           setState(() {
@@ -151,13 +175,18 @@ class _CepPageState extends State<CepPage> {
                       child: ElevatedButton(
                         onPressed: () async {
                           FocusScope.of(context).unfocus();
-                          if (cepController.text.length < 8) {
+                          if (cepController.text.length < 9) {
                             setState(() {
                               showError = true;
                             });
                             return;
                           }
-                          await controller.searchCep(cepController.text);
+                          setState(() {
+                            isLoading = true; // Inicia o carregamento
+                          });
+                          final rawCep = cepController.text
+                              .replaceAll('-', ''); // Remove a máscara
+                          await controller.searchCep(rawCep);
                           if (controller.state.address != null) {
                             ruaController.text =
                                 controller.state.address!.logradouro;
@@ -173,9 +202,13 @@ class _CepPageState extends State<CepPage> {
                             });
                           } else {
                             setState(() {
-                              showError = true;
+                              showError =
+                                  true; // Exibe erro se o CEP não existir
                             });
                           }
+                          setState(() {
+                            isLoading = false; // Finaliza o carregamento
+                          });
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFED7160),
@@ -211,6 +244,13 @@ class _CepPageState extends State<CepPage> {
             ),
 
             const SizedBox(height: 20),
+
+            if (isLoading) ...[
+              const Center(
+                child: CircularProgressIndicator(), // Mostra o loading
+              ),
+              const SizedBox(height: 20),
+            ],
 
             if (showResults) ...[
               buildTextField("Rua", ruaController),
@@ -341,8 +381,12 @@ class _CepPageState extends State<CepPage> {
             controller: controller,
             readOnly: true,
             decoration: InputDecoration(
+              hintText: label,
+              filled: true, // Habilita o fundo
+              fillColor: Colors.grey.shade200, // Cor do fundo
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none, // Remove a borda
               ),
               contentPadding: const EdgeInsets.symmetric(
                 vertical: 10,
