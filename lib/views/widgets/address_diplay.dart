@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class AddressDisplay extends StatelessWidget {
   final Address address;
 
-  AddressDisplay({required this.address});
+  const AddressDisplay({super.key, required this.address});
 
   @override
   Widget build(BuildContext context) {

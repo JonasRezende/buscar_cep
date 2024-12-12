@@ -8,9 +8,9 @@ class ReducedAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double height;
 
   const ReducedAppBar({
-    Key? key,
+    super.key,
     this.height = 40.0, // Altura reduzida para a AppBar
-  }) : super(key: key);
+  });
 
   @override
   Size get preferredSize => Size.fromHeight(height);
@@ -27,11 +27,13 @@ class ReducedAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 class CepPage extends StatefulWidget {
+  const CepPage({super.key});
+
   @override
-  _CepPageState createState() => _CepPageState();
+  CepPageState createState() => CepPageState();
 }
 
-class _CepPageState extends State<CepPage> {
+class CepPageState extends State<CepPage> {
   final TextEditingController cepController = TextEditingController();
   final TextEditingController ruaController = TextEditingController();
   final TextEditingController bairroController = TextEditingController();
