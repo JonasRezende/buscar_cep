@@ -7,12 +7,14 @@ void main() {
   runApp(
     ModularApp(
       module: AppModule(), // Inicializa o AppModule
-      child: MyApp(), // Widget principal do aplicativo
+      child: const MyApp(), // Widget principal do aplicativo
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(

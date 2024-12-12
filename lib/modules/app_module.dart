@@ -12,6 +12,7 @@ class AppModule extends Module {
   List<ModularRoute> get routes => [
         // Define a rota inicial
         ChildRoute('/',
-            child: (context, args) => CepPage()), // Página inicial é a CepPage
+            child: (context, args) =>
+                const CepPage()), // Página inicial é a CepPage
       ];
 }
